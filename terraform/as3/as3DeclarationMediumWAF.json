@@ -1,0 +1,119 @@
+{
+  "class": "AS3",
+  "action": "deploy",
+  "persist": true,
+  "declaration": {
+    "class": "ADC",
+    "schemaVersion": "3.15.0",
+    "label": "autoscale_waf",
+    "id": "autoscale_waf",
+    "remark": "autoscale_waf",
+    "Common": {
+      "class": "Tenant",
+      "Shared": {
+        "class": "Application",
+        "template": "shared",
+        "serviceAddress": {
+          "class": "Service_Address",
+          "virtualAddress": "0.0.0.0"
+        },
+        "policyLowWAF": {
+          "class": "WAF_Policy",
+          "url": "https://raw.githubusercontent.com/LeonardosGitHub/autoscaleWAF/master/terraform/wafPolicies/asm-policy-linux-low.xml"
+        },
+        "policyMedWAF": {
+          "class": "WAF_Policy",
+          "url": "https://raw.githubusercontent.com/LeonardosGitHub/autoscaleWAF/master/terraform/wafPolicies/asm-policy-linux-medium.xml"
+        },
+        "policyHighWAF": {
+          "class": "WAF_Policy",
+          "url": "https://raw.githubusercontent.com/LeonardosGitHub/autoscaleWAF/master/terraform/wafPolicies/asm-policy-linux-high.xml"
+        }
+      }
+    },
+    "LOB_name": {
+      "class": "Tenant",
+      "http": {
+        "class": "Application",
+        "template": "http",
+        "serviceMain": {
+          "class": "Service_HTTP",
+          "virtualAddresses": [
+            {
+              "use": "/Common/Shared/serviceAddress"
+            }
+          ],
+          "virtualPort": 80,
+          "snat": "auto",
+          "pool": "pool",
+          "policyWAF": {
+            "use": "/Common/Shared/policyMedWAF"
+          },
+          "securityLogProfiles": [
+          {"bigip": "/Common/Log illegal requests"}
+          ]
+        },
+        "pool": {
+          "class": "Pool",
+          "monitors": [
+            "http"
+          ],
+          "members": [
+            {
+              "autoPopulate": true,
+              "servicePort": 80,
+              "addressDiscovery": "aws",
+              "updateInterval": 15,
+              "tagKey": "serviceDiscovery1",
+              "tagValue": "LOB1",
+              "addressRealm": "private",
+              "region": "us-east-2"
+            }
+          ]
+        }
+      }
+    },
+    "LOB2_name": {
+      "class": "Tenant",
+      "http": {
+        "class": "Application",
+        "template": "http",
+        "serviceMain": {
+          "class": "Service_HTTP",
+          "virtualAddresses": [
+            {
+              "use": "/Common/Shared/serviceAddress"
+            }
+          ],
+          "virtualPort": 81,
+          "snat": "auto",
+          "pool": "pool",
+          "policyWAF": {
+            "use": "/Common/Shared/policyMedWAF"
+          },
+          "securityLogProfiles": [
+          {"bigip": "/Common/Log illegal requests"}
+          ]
+        },
+        "pool": {
+          "class": "Pool",
+          "monitors": [
+            "http"
+          ],
+          "members": [
+            {
+              "autoPopulate": true,
+              "servicePort": 80,
+              "addressDiscovery": "aws",
+              "updateInterval": 15,
+              "tagKey": "serviceDiscovery2",
+              "tagValue": "LOB2",
+              "addressRealm": "private",
+              "region": "us-east-2"
+            }
+          ]
+        }
+      }
+    }
+  }
+}
